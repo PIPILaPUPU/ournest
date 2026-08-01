@@ -1,0 +1,7 @@
+our-nest.ru, www.our-nest.ru {
+    reverse_proxy frontend:80
+}
+
+api.our-nest.ru {
+    reverse_proxy backend:8080
+}

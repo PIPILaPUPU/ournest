@@ -40,5 +40,5 @@ INSERT INTO users (username, password_hash) VALUES
     ('bob',   '$2a$10$mUO4ptNAp9vsvaULWt.rpOibC6RepIqjmg8z1PAHSOQ1P6DWkmi1W');
 
 INSERT INTO wishes (owner_id, title, description, url, price, group_name, group_color) VALUES
-    (1, 'Книга по Go', 'Для освежения знаний', 'https://example.com/go-book', 45.00, 'Учеба', 'blue'),
-    (2, 'Наушники', NULL, 'https://example.com/headphones', 120.00, 'Техника', 'violet');
+    (1, 'Книга по Go', 'Для освежения знаний', 'https://example.com/go-book', 45.00, 'Учеба', 'violet'),
+    (2, 'Наушники', NULL, 'https://example.com/headphones', 120.00, 'Техника', 'blue');
