@@ -1,0 +1,8 @@
+{
+  "owner_id": 1,
+  "title": "Кофемашина",
+  "description": "Компактная, с капучинатором",
+  "url": "https://example.com/coffee-machine",
+  "price": 249.99,
+  "status": "wanted"
+}
