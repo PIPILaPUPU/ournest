@@ -3,7 +3,6 @@ name: ournest-prod
 services:
   db:
     image: postgres:16-alpine
-    container_name: wishlist_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -24,7 +23,6 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: wishlist_backend
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -55,7 +53,6 @@ services:
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: ${VITE_API_URL}
-    container_name: wishlist_frontend
     restart: unless-stopped
     depends_on:
       - backend
@@ -64,7 +61,6 @@ services:
 
   caddy:
     image: caddy:2.8-alpine
-    container_name: wishlist_caddy
     restart: unless-stopped
     ports:
       - "80:80"
