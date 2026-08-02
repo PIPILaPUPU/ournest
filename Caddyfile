@@ -5,3 +5,11 @@ our-nest.ru, www.our-nest.ru {
 api.our-nest.ru {
     reverse_proxy backend:8080
 }
+
+dev.our-nest.ru {
+    reverse_proxy dev_frontend:80
+}
+
+api-dev.our-nest.ru {
+    reverse_proxy dev_backend:8080
+}
