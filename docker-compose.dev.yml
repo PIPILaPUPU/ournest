@@ -28,6 +28,20 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - ournest_shared
+
+  migrate:
+    image: postgres:16-alpine
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ./backend/migrations:/migrations:ro
+      - ./scripts/migrate.sh:/scripts/migrate.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/migrate.sh"]
+    depends_on:
       db:
         condition: service_healthy
     networks:

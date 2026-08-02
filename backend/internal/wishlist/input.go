@@ -1,4 +1,4 @@
-package model
+package wishlist
 
 // CreateWishInput — данные для repository (не HTTP).
 type CreateWishInput struct {

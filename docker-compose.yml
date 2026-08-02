@@ -28,6 +28,18 @@ services:
     environment:
       DATABASE_URL: postgres://wishlist:wishlist@db:5432/wishlist?sslmode=disable
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    image: postgres:16-alpine
+    environment:
+      DATABASE_URL: postgres://wishlist:wishlist@db:5432/wishlist?sslmode=disable
+    volumes:
+      - ./backend/migrations:/migrations:ro
+      - ./scripts/migrate.sh:/scripts/migrate.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/migrate.sh"]
+    depends_on:
       db:
         condition: service_healthy
 

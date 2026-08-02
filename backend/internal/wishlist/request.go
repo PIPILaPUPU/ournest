@@ -1,4 +1,4 @@
-package model
+package wishlist
 
 // CreateWishRequest — тело POST /wishlist.
 type CreateWishRequest struct {
