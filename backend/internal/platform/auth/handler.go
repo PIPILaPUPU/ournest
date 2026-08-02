@@ -1,4 +1,4 @@
-package handler
+package auth
 
 import (
 	"encoding/json"
@@ -6,22 +6,26 @@ import (
 	"net/http"
 	"strings"
 
-	"wishlistapp/internal/model"
-	"wishlistapp/internal/repository"
+	"wishlistapp/internal/platform/httpx"
 
+	"github.com/go-chi/chi"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
-	repo *repository.UserRepository
+	repo *UserRepository
 }
 
-func NewAuthHandler(repo *repository.UserRepository) *AuthHandler {
+func NewAuthHandler(repo *UserRepository) *AuthHandler {
 	return &AuthHandler{repo: repo}
 }
 
+func (h *AuthHandler) Routes(r chi.Router) {
+	r.Post("/login", h.Login)
+}
+
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var req model.LoginRequest
+	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON body", http.StatusBadRequest)
 		return
@@ -35,7 +39,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	creds, err := h.repo.FindCredentialsByUsername(r.Context(), req.Username)
 	if err != nil {
-		if errors.Is(err, repository.ErrInvalidCredentials) {
+		if errors.Is(err, ErrInvalidCredentials) {
 			http.Error(w, "invalid username or password", http.StatusUnauthorized)
 			return
 		}
@@ -48,7 +52,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, model.LoginResponse{
+	httpx.WriteJSON(w, http.StatusOK, LoginResponse{
 		UserID:   creds.ID,
 		Username: creds.Username,
 	})

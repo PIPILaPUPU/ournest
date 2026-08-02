@@ -1,11 +1,9 @@
-package repository
+package wishlist
 
 import (
 	"context"
 	"errors"
 	"fmt"
-
-	"wishlistapp/internal/model"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,8 +21,8 @@ func NewWishRepository(db *pgxpool.Pool) *WishRepository {
 	return &WishRepository{db: db}
 }
 
-func scanWish(row pgx.Row) (model.Wish, error) {
-	var wish model.Wish
+func scanWish(row pgx.Row) (Wish, error) {
+	var wish Wish
 	err := row.Scan(
 		&wish.ID,
 		&wish.OwnerID,
@@ -57,7 +55,7 @@ const wishSelectColumns = `
 	w.updated_at
 `
 
-func (r *WishRepository) List(ctx context.Context) ([]model.Wish, error) {
+func (r *WishRepository) List(ctx context.Context) ([]Wish, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT `+wishSelectColumns+`
 		FROM wishes w
@@ -68,9 +66,9 @@ func (r *WishRepository) List(ctx context.Context) ([]model.Wish, error) {
 	}
 	defer rows.Close()
 
-	wishes := make([]model.Wish, 0)
+	wishes := make([]Wish, 0)
 	for rows.Next() {
-		var wish model.Wish
+		var wish Wish
 		if err := rows.Scan(
 			&wish.ID,
 			&wish.OwnerID,
@@ -97,7 +95,7 @@ func (r *WishRepository) List(ctx context.Context) ([]model.Wish, error) {
 	return wishes, nil
 }
 
-func (r *WishRepository) Create(ctx context.Context, input model.CreateWishInput) (model.Wish, error) {
+func (r *WishRepository) Create(ctx context.Context, input CreateWishInput) (Wish, error) {
 	row := r.db.QueryRow(ctx, `
 		WITH inserted AS (
 			INSERT INTO wishes (owner_id, title, description, url, price, status, group_name, group_color)
@@ -131,13 +129,13 @@ func (r *WishRepository) Create(ctx context.Context, input model.CreateWishInput
 
 	wish, err := scanWish(row)
 	if err != nil {
-		return model.Wish{}, fmt.Errorf("insert wish: %w", err)
+		return Wish{}, fmt.Errorf("insert wish: %w", err)
 	}
 
 	return wish, nil
 }
 
-func (r *WishRepository) Update(ctx context.Context, id int, input model.UpdateWishInput) (model.Wish, error) {
+func (r *WishRepository) Update(ctx context.Context, id int, input UpdateWishInput) (Wish, error) {
 	row := r.db.QueryRow(ctx, `
 		WITH updated AS (
 			UPDATE wishes SET
@@ -172,9 +170,9 @@ func (r *WishRepository) Update(ctx context.Context, id int, input model.UpdateW
 	wish, err := scanWish(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return model.Wish{}, ErrNotFound
+			return Wish{}, ErrNotFound
 		}
-		return model.Wish{}, fmt.Errorf("update wish: %w", err)
+		return Wish{}, fmt.Errorf("update wish: %w", err)
 	}
 
 	return wish, nil

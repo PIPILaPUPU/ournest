@@ -9,10 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"wishlistapp/internal/config"
-	"wishlistapp/internal/database"
-	"wishlistapp/internal/handler"
-	"wishlistapp/internal/repository"
+	"wishlistapp/internal/dateideas"
+	"wishlistapp/internal/platform/auth"
+	"wishlistapp/internal/platform/config"
+	"wishlistapp/internal/platform/database"
+	"wishlistapp/internal/wishlist"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
@@ -31,10 +32,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	wishRepo := repository.NewWishRepository(pool)
-	userRepo := repository.NewUserRepository(pool)
-	wishlistHandler := handler.NewWishlistHandler(wishRepo)
-	authHandler := handler.NewAuthHandler(userRepo)
+	wishRepo := wishlist.NewWishRepository(pool)
+	userRepo := auth.NewUserRepository(pool)
+	dateIdeasRepo := dateideas.NewRepository(pool)
+	wishlistHandler := wishlist.NewWishlistHandler(wishRepo)
+	authHandler := auth.NewAuthHandler(userRepo)
+	dateIdeasHandler := dateideas.NewHandler(dateIdeasRepo)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -44,11 +47,9 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-	r.Get("/wishlist", wishlistHandler.GetWishlist)
-	r.Post("/wishlist", wishlistHandler.CreateWish)
-	r.Patch("/wishlist/{id}", wishlistHandler.UpdateWish)
-	r.Delete("/wishlist/{id}", wishlistHandler.DeleteWish)
-	r.Post("/auth/login", authHandler.Login)
+	r.Route("/wishlist", wishlistHandler.Routes)
+	r.Route("/auth", authHandler.Routes)
+	r.Route("/date-ideas", dateIdeasHandler.Routes)
 
 	srv := &http.Server{
 		Addr:    ":8080",
