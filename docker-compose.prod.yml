@@ -1,3 +1,5 @@
+name: ournest-prod
+
 services:
   db:
     image: postgres:16-alpine
@@ -9,14 +11,15 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - ournest_shared
+      ournest_shared:
+        aliases:
+          - prod-db
 
   backend:
     build:

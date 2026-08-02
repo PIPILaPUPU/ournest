@@ -10,14 +10,15 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - ournest_shared
+      ournest_shared:
+        aliases:
+          - dev-db
 
   backend:
     build:
