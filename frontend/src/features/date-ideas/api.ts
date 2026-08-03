@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import axios from "axios";
 import type {
   CreateDateIdeaPayload,
   DateIdea,
@@ -8,6 +9,18 @@ import type {
 export async function getDateIdeas(): Promise<DateIdea[]> {
   const response = await apiClient.get<DateIdea[]>("/date-ideas");
   return response.data;
+}
+
+export async function getRandomSecretDateIdea(): Promise<DateIdea | null> {
+  try {
+    const response = await apiClient.get<DateIdea>("/date-ideas/secret/random");
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function createDateIdea(payload: CreateDateIdeaPayload): Promise<DateIdea> {

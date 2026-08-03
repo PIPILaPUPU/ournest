@@ -9,6 +9,7 @@ type DateIdea struct {
 	Title          string
 	Description    *string
 	Status         string
+	IsSecret       bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -17,6 +18,7 @@ type CreateRequest struct {
 	AuthorID    int     `json:"author_id"`
 	Title       string  `json:"title"`
 	Description *string `json:"description"`
+	IsSecret    bool    `json:"is_secret"`
 }
 
 type UpdateRequest struct {
@@ -31,6 +33,7 @@ type Response struct {
 	Title          string    `json:"title"`
 	Description    *string   `json:"description"`
 	Status         string    `json:"status"`
+	IsSecret       bool      `json:"is_secret"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
@@ -43,6 +46,7 @@ func toResponse(idea DateIdea) Response {
 		Title:          idea.Title,
 		Description:    idea.Description,
 		Status:         idea.Status,
+		IsSecret:       idea.IsSecret,
 		CreatedAt:      idea.CreatedAt,
 		UpdatedAt:      idea.UpdatedAt,
 	}
