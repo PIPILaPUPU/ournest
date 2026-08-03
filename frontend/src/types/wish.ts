@@ -16,7 +16,6 @@ export type Wish = {
 export type GroupColor = "slate" | "blue" | "green" | "violet" | "rose";
 
 export type CreateWishPayload = {
-  owner_id: number;
   title: string;
   description?: string;
   url?: string;

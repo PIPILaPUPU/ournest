@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"wishlistapp/internal/notifications"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -12,11 +14,12 @@ import (
 var ErrNotFound = errors.New("date idea not found")
 
 type Repository struct {
-	db *pgxpool.Pool
+	db       *pgxpool.Pool
+	notifier *notifications.Repository
 }
 
-func NewRepository(db *pgxpool.Pool) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *pgxpool.Pool, notifier *notifications.Repository) *Repository {
+	return &Repository{db: db, notifier: notifier}
 }
 
 const selectColumns = `
@@ -108,7 +111,13 @@ func (r *Repository) RandomSecret(ctx context.Context) (DateIdea, error) {
 }
 
 func (r *Repository) Create(ctx context.Context, authorID int, title string, description *string, isSecret bool) (DateIdea, error) {
-	row := r.db.QueryRow(ctx, `
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return DateIdea{}, fmt.Errorf("begin create date idea: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	row := tx.QueryRow(ctx, `
 		WITH inserted AS (
 			INSERT INTO date_ideas (author_id, title, description, is_secret)
 			VALUES ($1, $2, $3, $4)
@@ -128,6 +137,22 @@ func (r *Repository) Create(ctx context.Context, authorID int, title string, des
 	idea, err := scanIdea(row)
 	if err != nil {
 		return DateIdea{}, fmt.Errorf("insert date idea: %w", err)
+	}
+
+	if notifications.ShouldNotifyDateIdea(idea.IsSecret) {
+		if err := r.notifier.EnqueueForPartner(
+			ctx,
+			tx,
+			notifications.EventDateIdeaCreated,
+			idea.AuthorID,
+			notifications.DateIdeaCreatedPayload(idea.AuthorUsername, idea.Title),
+		); err != nil {
+			return DateIdea{}, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return DateIdea{}, fmt.Errorf("commit create date idea: %w", err)
 	}
 	return idea, nil
 }

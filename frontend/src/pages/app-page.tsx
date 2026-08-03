@@ -3,6 +3,8 @@ import { CalendarHeart, Gift, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginScreen } from "@/features/auth/login-screen";
 import { DateIdeasModule } from "@/features/date-ideas/date-ideas-module";
+import { NotificationToggle } from "@/features/notifications/notification-toggle";
+import { disablePush } from "@/features/notifications/push";
 import { WishlistModule } from "@/features/wishlist/wishlist-module";
 import type { LoginResponse } from "@/types/auth";
 
@@ -20,20 +22,30 @@ const modules: Array<{
 
 export function AppPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeModule, setActiveModule] = useState<ModuleKey>("wishlist");
+  const [activeModule, setActiveModule] = useState<ModuleKey>(() => {
+    const section = new URLSearchParams(window.location.search).get("section");
+    return section === "date-ideas" ? "date-ideas" : "wishlist";
+  });
   const [session, setSession] = useState<LoginResponse | null>(() => {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     try {
-      return JSON.parse(raw) as LoginResponse;
+      const parsed = JSON.parse(raw) as LoginResponse;
+      return parsed.token ? parsed : null;
     } catch {
       return null;
     }
   });
 
-  const logout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    setSession(null);
+  const logout = async () => {
+    try {
+      await disablePush();
+    } catch {
+      // Logout must still complete if the browser cannot remove the subscription.
+    } finally {
+      localStorage.removeItem(SESSION_KEY);
+      setSession(null);
+    }
   };
 
   if (!session) {
@@ -56,7 +68,8 @@ export function AppPage() {
           </div>
           <div className="flex items-center gap-3 text-sm text-muted">
             <span>{session.username}</span>
-            <Button variant="outline" onClick={logout}>
+            <NotificationToggle />
+            <Button variant="outline" onClick={() => void logout()}>
               Выйти
             </Button>
           </div>
@@ -79,6 +92,9 @@ export function AppPage() {
                 type="button"
                 onClick={() => {
                   setActiveModule(module.key);
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("section", module.key);
+                  window.history.replaceState({}, "", url);
                   setIsSidebarOpen(false);
                 }}
                 className={[
@@ -97,12 +113,8 @@ export function AppPage() {
       </aside>
 
       <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
-        {activeModule === "wishlist" && (
-          <WishlistModule currentUserId={session.user_id} />
-        )}
-        {activeModule === "date-ideas" && (
-          <DateIdeasModule currentUserId={session.user_id} />
-        )}
+        {activeModule === "wishlist" && <WishlistModule />}
+        {activeModule === "date-ideas" && <DateIdeasModule />}
       </main>
     </div>
   );

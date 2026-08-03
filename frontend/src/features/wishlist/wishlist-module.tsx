@@ -27,7 +27,7 @@ const GROUP_STYLE: Record<GroupColor, { border: string; background: string }> = 
   rose: { border: "border-rose-300", background: "bg-rose-50" },
 };
 
-export function WishlistModule({ currentUserId }: { currentUserId: number }) {
+export function WishlistModule() {
   const queryClient = useQueryClient();
   const [activeGroup, setActiveGroup] = useState<GroupName | null>(null);
   const { toast, showSuccessToast, dismissSuccessToast } = useSuccessToast();
@@ -113,7 +113,6 @@ export function WishlistModule({ currentUserId }: { currentUserId: number }) {
           groupName={activeGroup}
           groupColor={FIXED_GROUPS.find((g) => g.name === activeGroup)?.color ?? "slate"}
           wishes={wishesByGroup[activeGroup]}
-          currentUserId={currentUserId}
           onClose={() => setActiveGroup(null)}
           onCreate={(payload) => createMutation.mutate(payload)}
           onDelete={(id) => deleteMutation.mutate(id)}
@@ -168,7 +167,6 @@ function GroupModal({
   groupName,
   groupColor,
   wishes,
-  currentUserId,
   onClose,
   onCreate,
   onDelete,
@@ -178,10 +176,8 @@ function GroupModal({
   groupName: GroupName;
   groupColor: GroupColor;
   wishes: Wish[];
-  currentUserId: number;
   onClose: () => void;
   onCreate: (payload: {
-    owner_id: number;
     title: string;
     description?: string;
     url?: string;
@@ -224,7 +220,6 @@ function GroupModal({
                     return;
                   }
                   onCreate({
-                    owner_id: currentUserId,
                     title: title.trim(),
                     description: description.trim() || undefined,
                     url: url.trim() || undefined,

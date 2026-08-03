@@ -6,4 +6,5 @@ export type LoginPayload = {
 export type LoginResponse = {
   user_id: number;
   username: string;
+  token: string;
 };

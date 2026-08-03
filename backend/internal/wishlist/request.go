@@ -2,7 +2,6 @@ package wishlist
 
 // CreateWishRequest — тело POST /wishlist.
 type CreateWishRequest struct {
-	OwnerID     int      `json:"owner_id"`
 	Title       string   `json:"title"`
 	Description *string  `json:"description"`
 	URL         *string  `json:"url"`
@@ -12,9 +11,9 @@ type CreateWishRequest struct {
 	GroupColor  string   `json:"group_color"`
 }
 
-func (r CreateWishRequest) ToInput(status, groupName, groupColor string) CreateWishInput {
+func (r CreateWishRequest) ToInput(ownerID int, status, groupName, groupColor string) CreateWishInput {
 	return CreateWishInput{
-		OwnerID:     r.OwnerID,
+		OwnerID:     ownerID,
 		Title:       r.Title,
 		Description: r.Description,
 		URL:         r.URL,
