@@ -246,7 +246,7 @@ function GroupModal({
                 />
                 <input
                   className="w-full rounded-lg border border-border bg-white px-3 py-2 outline-none focus:border-gray-500"
-                  placeholder="Цена"
+                  placeholder="Цена, ₽"
                   type="number"
                   step="0.01"
                   min="0"
@@ -304,7 +304,7 @@ function WishRow({
           <p className="font-medium">{wish.title}</p>
           <p className="mt-1 text-sm text-muted">{wish.description ?? "Без описания"}</p>
           <p className="mt-1 text-xs text-muted">
-            {wish.url ?? "Ссылка не указана"} {wish.price ? `• ${wish.price}$` : ""}
+            {wish.url ?? "Ссылка не указана"} {wish.price != null ? `• ${wish.price} ₽` : ""}
           </p>
           <p className="mt-1 text-xs text-muted">Добавил: {wish.owner_username}</p>
         </div>
@@ -345,7 +345,7 @@ function WishRow({
           />
           <input
             className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-gray-500"
-            placeholder="Цена"
+            placeholder="Цена, ₽"
             type="number"
             step="0.01"
             min="0"
