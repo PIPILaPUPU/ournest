@@ -26,6 +26,7 @@ const selectColumns = `
 	d.title,
 	d.description,
 	d.status,
+	d.is_secret,
 	d.created_at,
 	d.updated_at
 `
@@ -39,6 +40,7 @@ func scanIdea(row pgx.Row) (DateIdea, error) {
 		&idea.Title,
 		&idea.Description,
 		&idea.Status,
+		&idea.IsSecret,
 		&idea.CreatedAt,
 		&idea.UpdatedAt,
 	)
@@ -50,6 +52,7 @@ func (r *Repository) List(ctx context.Context) ([]DateIdea, error) {
 		SELECT `+selectColumns+`
 		FROM date_ideas d
 		JOIN users u ON u.id = d.author_id
+		WHERE d.is_secret = FALSE
 		ORDER BY d.created_at DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("query date ideas: %w", err)
@@ -70,21 +73,42 @@ func (r *Repository) List(ctx context.Context) ([]DateIdea, error) {
 	return ideas, nil
 }
 
-func (r *Repository) Create(ctx context.Context, authorID int, title string, description *string) (DateIdea, error) {
+func (r *Repository) RandomSecret(ctx context.Context) (DateIdea, error) {
+	row := r.db.QueryRow(ctx, `
+		SELECT `+selectColumns+`
+		FROM date_ideas d
+		JOIN users u ON u.id = d.author_id
+		WHERE d.is_secret = TRUE
+		  AND d.status = 'planned'
+		ORDER BY RANDOM()
+		LIMIT 1`)
+
+	idea, err := scanIdea(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return DateIdea{}, ErrNotFound
+		}
+		return DateIdea{}, fmt.Errorf("select random secret date idea: %w", err)
+	}
+	return idea, nil
+}
+
+func (r *Repository) Create(ctx context.Context, authorID int, title string, description *string, isSecret bool) (DateIdea, error) {
 	row := r.db.QueryRow(ctx, `
 		WITH inserted AS (
-			INSERT INTO date_ideas (author_id, title, description)
-			VALUES ($1, $2, $3)
+			INSERT INTO date_ideas (author_id, title, description, is_secret)
+			VALUES ($1, $2, $3, $4)
 			RETURNING *
 		)
 		SELECT
 			i.id, i.author_id, u.username, i.title, i.description,
-			i.status, i.created_at, i.updated_at
+			i.status, i.is_secret, i.created_at, i.updated_at
 		FROM inserted i
 		JOIN users u ON u.id = i.author_id`,
 		authorID,
 		title,
 		description,
+		isSecret,
 	)
 
 	idea, err := scanIdea(row)
@@ -106,7 +130,7 @@ func (r *Repository) Update(ctx context.Context, id int, input UpdateRequest) (D
 		)
 		SELECT
 			d.id, d.author_id, u.username, d.title, d.description,
-			d.status, d.created_at, d.updated_at
+			d.status, d.is_secret, d.created_at, d.updated_at
 		FROM updated d
 		JOIN users u ON u.id = d.author_id`,
 		id,

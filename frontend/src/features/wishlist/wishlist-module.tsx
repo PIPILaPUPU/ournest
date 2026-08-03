@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  SuccessToast,
+  useSuccessToast,
+} from "@/components/ui/success-toast";
 import { createWish, deleteWish, getWishlist, updateWish } from "@/features/wishlist/api";
 import type { GroupColor, Wish } from "@/types/wish";
 
@@ -26,6 +30,7 @@ const GROUP_STYLE: Record<GroupColor, { border: string; background: string }> = 
 export function WishlistModule({ currentUserId }: { currentUserId: number }) {
   const queryClient = useQueryClient();
   const [activeGroup, setActiveGroup] = useState<GroupName | null>(null);
+  const { toast, showSuccessToast, dismissSuccessToast } = useSuccessToast();
 
   const { data: wishes, isLoading, isError } = useQuery({
     queryKey: ["wishlist"],
@@ -34,12 +39,20 @@ export function WishlistModule({ currentUserId }: { currentUserId: number }) {
 
   const createMutation = useMutation({
     mutationFn: createWish,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["wishlist"] }),
+    onSuccess: () => {
+      setActiveGroup(null);
+      showSuccessToast("Желание успешно добавлено");
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteWish,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["wishlist"] }),
+    onSuccess: () => {
+      setActiveGroup(null);
+      showSuccessToast("Желание успешно удалено");
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
   });
 
   const updateMutation = useMutation({
@@ -108,6 +121,7 @@ export function WishlistModule({ currentUserId }: { currentUserId: number }) {
           isBusy={createMutation.isPending || deleteMutation.isPending || updateMutation.isPending}
         />
       )}
+      <SuccessToast toast={toast} onClose={dismissSuccessToast} />
     </div>
   );
 }

@@ -21,6 +21,7 @@ func NewHandler(repo *Repository) *Handler {
 
 func (h *Handler) Routes(r chi.Router) {
 	r.Get("/", h.List)
+	r.Get("/secret/random", h.RandomSecret)
 	r.Post("/", h.Create)
 	r.Patch("/{id}", h.Update)
 	r.Delete("/{id}", h.Delete)
@@ -33,6 +34,19 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, toListResponse(ideas))
+}
+
+func (h *Handler) RandomSecret(w http.ResponseWriter, r *http.Request) {
+	idea, err := h.repo.RandomSecret(r.Context())
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			http.Error(w, "secret date ideas not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, toResponse(idea))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +65,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idea, err := h.repo.Create(r.Context(), req.AuthorID, req.Title, req.Description)
+	idea, err := h.repo.Create(
+		r.Context(),
+		req.AuthorID,
+		req.Title,
+		req.Description,
+		req.IsSecret,
+	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
