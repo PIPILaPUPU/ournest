@@ -33,9 +33,6 @@ export function LoginScreen({ onSuccess }: { onSuccess: (session: LoginResponse)
       <Card className="w-full max-w-md">
         <CardContent>
           <h1 className="text-2xl font-semibold">Вход</h1>
-          <p className="mt-2 text-sm text-muted">
-            Используй тестовых пользователей из миграции: alice / secret или bob / secret
-          </p>
           <form
             className="mt-6 space-y-4"
             onSubmit={(e) => {
@@ -45,23 +42,23 @@ export function LoginScreen({ onSuccess }: { onSuccess: (session: LoginResponse)
             }}
           >
             <label className="block">
-              <span className="mb-1 block text-sm">Username</span>
+              <span className="mb-1 block text-sm">Логин</span>
               <input
                 className="w-full rounded-lg border border-border bg-white px-3 py-2 outline-none focus:border-gray-500"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="alice"
+                autoComplete="username"
                 required
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-sm">Password</span>
+              <span className="mb-1 block text-sm">Пароль</span>
               <input
                 className="w-full rounded-lg border border-border bg-white px-3 py-2 outline-none focus:border-gray-500"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="secret"
+                autoComplete="current-password"
                 required
               />
             </label>
