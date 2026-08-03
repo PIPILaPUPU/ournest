@@ -75,13 +75,27 @@ func (r *Repository) List(ctx context.Context) ([]DateIdea, error) {
 
 func (r *Repository) RandomSecret(ctx context.Context) (DateIdea, error) {
 	row := r.db.QueryRow(ctx, `
-		SELECT `+selectColumns+`
-		FROM date_ideas d
+		WITH selected AS (
+			SELECT id
+			FROM date_ideas
+			WHERE is_secret = TRUE
+			  AND status = 'planned'
+			ORDER BY RANDOM()
+			LIMIT 1
+			FOR UPDATE SKIP LOCKED
+		),
+		deleted AS (
+			DELETE FROM date_ideas d
+			USING selected s
+			WHERE d.id = s.id
+			RETURNING d.*
+		)
+		SELECT
+			d.id, d.author_id, u.username, d.title, d.description,
+			d.status, d.is_secret, d.created_at, d.updated_at
+		FROM deleted d
 		JOIN users u ON u.id = d.author_id
-		WHERE d.is_secret = TRUE
-		  AND d.status = 'planned'
-		ORDER BY RANDOM()
-		LIMIT 1`)
+	`)
 
 	idea, err := scanIdea(row)
 	if err != nil {
