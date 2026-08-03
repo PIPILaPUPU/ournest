@@ -27,6 +27,10 @@ services:
       - "8080:8080"
     environment:
       DATABASE_URL: postgres://wishlist:wishlist@db:5432/wishlist?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-me}
+      WEB_PUSH_PUBLIC_KEY: ${WEB_PUSH_PUBLIC_KEY:-}
+      WEB_PUSH_PRIVATE_KEY: ${WEB_PUSH_PRIVATE_KEY:-}
+      WEB_PUSH_SUBJECT: ${WEB_PUSH_SUBJECT:-mailto:dev@our-nest.ru}
     depends_on:
       migrate:
         condition: service_completed_successfully

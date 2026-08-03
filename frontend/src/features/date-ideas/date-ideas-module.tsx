@@ -26,7 +26,7 @@ import type { DateIdea } from "@/features/date-ideas/types";
 
 const queryKey = ["date-ideas"];
 
-export function DateIdeasModule({ currentUserId }: { currentUserId: number }) {
+export function DateIdeasModule() {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -105,7 +105,6 @@ export function DateIdeasModule({ currentUserId }: { currentUserId: number }) {
                 return;
               }
               createMutation.mutate({
-                author_id: currentUserId,
                 title: title.trim(),
                 description: description.trim() || undefined,
                 is_secret: isSecret,

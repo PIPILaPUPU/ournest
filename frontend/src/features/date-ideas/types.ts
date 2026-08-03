@@ -13,7 +13,6 @@ export type DateIdea = {
 };
 
 export type CreateDateIdeaPayload = {
-  author_id: number;
   title: string;
   description?: string;
   is_secret?: boolean;

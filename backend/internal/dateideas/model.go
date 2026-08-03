@@ -15,7 +15,6 @@ type DateIdea struct {
 }
 
 type CreateRequest struct {
-	AuthorID    int     `json:"author_id"`
 	Title       string  `json:"title"`
 	Description *string `json:"description"`
 	IsSecret    bool    `json:"is_secret"`

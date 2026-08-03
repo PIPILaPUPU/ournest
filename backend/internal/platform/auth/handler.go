@@ -13,11 +13,12 @@ import (
 )
 
 type AuthHandler struct {
-	repo *UserRepository
+	repo   *UserRepository
+	tokens *TokenManager
 }
 
-func NewAuthHandler(repo *UserRepository) *AuthHandler {
-	return &AuthHandler{repo: repo}
+func NewAuthHandler(repo *UserRepository, tokens *TokenManager) *AuthHandler {
+	return &AuthHandler{repo: repo, tokens: tokens}
 }
 
 func (h *AuthHandler) Routes(r chi.Router) {
@@ -52,8 +53,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := h.tokens.Issue(CurrentUser{ID: creds.ID, Username: creds.Username})
+	if err != nil {
+		http.Error(w, "could not create session", http.StatusInternalServerError)
+		return
+	}
+
 	httpx.WriteJSON(w, http.StatusOK, LoginResponse{
 		UserID:   creds.ID,
 		Username: creds.Username,
+		Token:    token,
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"wishlistapp/internal/platform/auth"
 	"wishlistapp/internal/platform/httpx"
 
 	"github.com/go-chi/chi"
@@ -56,8 +57,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Title = strings.TrimSpace(req.Title)
-	if req.AuthorID <= 0 {
-		http.Error(w, "author_id is required", http.StatusBadRequest)
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authenticated user is required", http.StatusUnauthorized)
 		return
 	}
 	if req.Title == "" {
@@ -67,7 +69,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	idea, err := h.repo.Create(
 		r.Context(),
-		req.AuthorID,
+		user.ID,
 		req.Title,
 		req.Description,
 		req.IsSecret,

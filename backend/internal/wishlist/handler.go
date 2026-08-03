@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"wishlistapp/internal/platform/auth"
 	"wishlistapp/internal/platform/httpx"
 
 	"github.com/go-chi/chi"
@@ -51,8 +52,9 @@ func (h *WishlistHandler) CreateWish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.OwnerID <= 0 {
-		http.Error(w, "owner_id is required", http.StatusBadRequest)
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authenticated user is required", http.StatusUnauthorized)
 		return
 	}
 	if strings.TrimSpace(req.Title) == "" {
@@ -80,7 +82,8 @@ func (h *WishlistHandler) CreateWish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wish, err := h.repo.Create(r.Context(), req.ToInput(status, groupName, groupColor))
+	input := req.ToInput(user.ID, status, groupName, groupColor)
+	wish, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

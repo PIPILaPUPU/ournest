@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"wishlistapp/internal/dateideas"
+	"wishlistapp/internal/notifications"
 	"wishlistapp/internal/platform/auth"
 	"wishlistapp/internal/platform/config"
 	"wishlistapp/internal/platform/database"
@@ -32,12 +33,19 @@ func main() {
 	}
 	defer pool.Close()
 
-	wishRepo := wishlist.NewWishRepository(pool)
+	notificationRepo := notifications.NewRepository(pool, cfg.NotificationsEnabled)
+	wishRepo := wishlist.NewWishRepository(pool, notificationRepo)
 	userRepo := auth.NewUserRepository(pool)
-	dateIdeasRepo := dateideas.NewRepository(pool)
+	dateIdeasRepo := dateideas.NewRepository(pool, notificationRepo)
+	tokenManager := auth.NewTokenManager(cfg.JWTSecret)
 	wishlistHandler := wishlist.NewWishlistHandler(wishRepo)
-	authHandler := auth.NewAuthHandler(userRepo)
+	authHandler := auth.NewAuthHandler(userRepo, tokenManager)
 	dateIdeasHandler := dateideas.NewHandler(dateIdeasRepo)
+	notificationHandler := notifications.NewHandler(
+		notificationRepo,
+		cfg.WebPushPublicKey,
+		cfg.NotificationsEnabled,
+	)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -47,9 +55,32 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-	r.Route("/wishlist", wishlistHandler.Routes)
 	r.Route("/auth", authHandler.Routes)
-	r.Route("/date-ideas", dateIdeasHandler.Routes)
+	r.Route("/wishlist", func(r chi.Router) {
+		r.Use(tokenManager.Middleware)
+		wishlistHandler.Routes(r)
+	})
+	r.Route("/date-ideas", func(r chi.Router) {
+		r.Use(tokenManager.Middleware)
+		dateIdeasHandler.Routes(r)
+	})
+	r.Get("/notifications/vapid-public-key", notificationHandler.PublicKey)
+	r.Route("/notifications", func(r chi.Router) {
+		r.Use(tokenManager.Middleware)
+		notificationHandler.Routes(r)
+	})
+
+	workerCtx, stopWorker := context.WithCancel(context.Background())
+	defer stopWorker()
+	if cfg.NotificationsEnabled {
+		sender := notifications.NewWebPushSender(
+			cfg.WebPushPublicKey,
+			cfg.WebPushPrivateKey,
+			cfg.WebPushSubject,
+		)
+		worker := notifications.NewWorker(notificationRepo, sender, log.Default())
+		go worker.Run(workerCtx)
+	}
 
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -66,6 +97,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	stopWorker()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

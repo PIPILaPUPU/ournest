@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"wishlistapp/internal/notifications"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -14,11 +16,12 @@ var ErrNotFound = errors.New("wish not found")
 // WishRepository отвечает только за работу с БД — SQL, Scan, ошибки pgx.
 // Handler не знает про запросы; repository не знает про HTTP.
 type WishRepository struct {
-	db *pgxpool.Pool
+	db       *pgxpool.Pool
+	notifier *notifications.Repository
 }
 
-func NewWishRepository(db *pgxpool.Pool) *WishRepository {
-	return &WishRepository{db: db}
+func NewWishRepository(db *pgxpool.Pool, notifier *notifications.Repository) *WishRepository {
+	return &WishRepository{db: db, notifier: notifier}
 }
 
 func scanWish(row pgx.Row) (Wish, error) {
@@ -96,7 +99,13 @@ func (r *WishRepository) List(ctx context.Context) ([]Wish, error) {
 }
 
 func (r *WishRepository) Create(ctx context.Context, input CreateWishInput) (Wish, error) {
-	row := r.db.QueryRow(ctx, `
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return Wish{}, fmt.Errorf("begin create wish: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	row := tx.QueryRow(ctx, `
 		WITH inserted AS (
 			INSERT INTO wishes (owner_id, title, description, url, price, status, group_name, group_color)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -132,6 +141,19 @@ func (r *WishRepository) Create(ctx context.Context, input CreateWishInput) (Wis
 		return Wish{}, fmt.Errorf("insert wish: %w", err)
 	}
 
+	if err := r.notifier.EnqueueForPartner(
+		ctx,
+		tx,
+		notifications.EventWishCreated,
+		wish.OwnerID,
+		notifications.WishCreatedPayload(wish.OwnerUsername, wish.Title),
+	); err != nil {
+		return Wish{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return Wish{}, fmt.Errorf("commit create wish: %w", err)
+	}
 	return wish, nil
 }
 
